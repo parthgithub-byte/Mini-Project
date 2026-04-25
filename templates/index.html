@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Gap Analyzer - Flask + Gemini</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="container">
+    {% if result %}
+      <div class="top-bar">
+        <div>
+          <div class="eyebrow">Analysis complete</div>
+          <h1><span class="role-icon">{{ role_display.icon }}</span> {{ role_display.label }}</h1>
+        </div>
+        <a class="btn-outline" href="{{ url_for('index') }}">New analysis</a>
+      </div>
+
+      <section class="card summary-card" aria-labelledby="assessment-title">
+        <div class="score-ring" style="--score: {{ result.matchScore }}; --score-color: {% if result.matchScore >= 70 %}var(--success){% elif result.matchScore >= 40 %}var(--warn){% else %}var(--danger){% endif %};">
+          <div>
+            <strong>{{ result.matchScore }}</strong>
+            <span>match score</span>
+          </div>
+        </div>
+        <div>
+          <h2 id="assessment-title">Overall assessment</h2>
+          <p class="summary-text">{{ result.summary }}</p>
+        </div>
+      </section>
+
+      <section class="metric-grid" aria-label="Analysis metrics">
+        <div class="metric">
+          <div class="metric-val metric-good">{{ result.matchedSkills|length }}</div>
+          <div class="metric-label">Skills matched</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val metric-risk">{{ result.missingSkills|length }}</div>
+          <div class="metric-label">Gaps found</div>
+        </div>
+        <div class="metric">
+          <div class="metric-val metric-info">{{ result.roadmap|length }}</div>
+          <div class="metric-label">Roadmap phases</div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="gaps-title">
+        <h2 class="card-title" id="gaps-title">Skill gaps by priority</h2>
+
+        {% if gap_groups.high %}
+          <div class="priority-block">
+            <h3 class="priority-title priority-high">High priority - address first</h3>
+            {% for skill in gap_groups.high %}
+              <div class="gap-item">
+                <div class="skill-row">
+                  <span class="pill pill-high">{{ skill.skill }}</span>
+                  <span class="category">{{ skill.category }}</span>
+                </div>
+                <p class="gap-meta">{{ skill.why }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if gap_groups.medium %}
+          <div class="priority-block">
+            <h3 class="priority-title priority-medium">Medium priority</h3>
+            <div class="pill-wrap">
+              {% for skill in gap_groups.medium %}
+                <span class="pill pill-medium">{{ skill.skill }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if gap_groups.low %}
+          <div class="priority-block">
+            <h3 class="priority-title priority-low">Lower priority - nice to have</h3>
+            <div class="pill-wrap">
+              {% for skill in gap_groups.low %}
+                <span class="pill pill-low">{{ skill.skill }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if not gap_groups.high and not gap_groups.medium and not gap_groups.low %}
+          <p class="empty-state">No significant gaps found. Great match.</p>
+        {% endif %}
+      </section>
+
+      <section class="card" aria-labelledby="matched-title">
+        <h2 class="card-title" id="matched-title">Skills you already have</h2>
+        {% if result.matchedSkills %}
+          {% for skill in result.matchedSkills %}
+            <div class="gap-item">
+              <div class="skill-row">
+                <span class="pill pill-matched">{{ skill.skill }}</span>
+                <span class="category">{{ skill.category }}</span>
+              </div>
+              {% if skill.evidence %}
+                <p class="gap-meta">{{ skill.evidence }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">No matching skills detected. Try pasting a more detailed resume.</p>
+        {% endif %}
+      </section>
+
+      <section class="card" aria-labelledby="roadmap-title">
+        <h2 class="card-title" id="roadmap-title">Your personalized learning roadmap</h2>
+        {% if result.roadmap %}
+          {% for phase in result.roadmap %}
+            <div class="phase-row">
+              <div class="phase-marker">
+                <div class="phase-dot"></div>
+                {% if not loop.last %}
+                  <div class="phase-line"></div>
+                {% endif %}
+              </div>
+              <div class="phase-content">
+                <div class="phase-head">
+                  <h3>{{ phase.phase }}</h3>
+                  <span>{{ phase.duration }}</span>
+                </div>
+                <div class="pill-wrap">
+                  {% for skill in phase.skills %}
+                    <span class="pill pill-low pill-small">{{ skill }}</span>
+                  {% endfor %}
+                </div>
+                {% if phase.resources %}
+                  <div class="resource-block">
+                    <div class="resource-label">Resources</div>
+                    {% for resource in phase.resources %}
+                      <a class="resource-chip" href="{{ resource.url }}" target="_blank" rel="noopener noreferrer">
+                        <span class="resource-dot" style="background: {{ type_colors.get(resource.type, '#888') }}"></span>
+                        {{ resource.name }}
+                        <span class="external">link</span>
+                      </a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">No roadmap phases were returned.</p>
+        {% endif %}
+      </section>
+
+      <section class="card" aria-labelledby="strengths-title">
+        <h2 class="card-title" id="strengths-title">Your key strengths</h2>
+        {% if result.strengths %}
+          {% for strength in result.strengths %}
+            <div class="strength-item">
+              <span class="checkmark">OK</span>
+              <p>{{ strength }}</p>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="empty-state">No strengths were returned.</p>
+        {% endif %}
+      </section>
+    {% else %}
+      <header class="header">
+        <h1>Resume gap analyzer</h1>
+        <p>Powered by Gemini AI. Skill data adapted from <a href="https://roadmap.sh" target="_blank" rel="noopener noreferrer">roadmap.sh</a></p>
+      </header>
+
+      <form class="section-gap" method="post" action="{{ url_for('analyze') }}" enctype="multipart/form-data">
+        <section class="card">
+          <label>Target role</label>
+          <div class="role-grid">
+            {% for key, role in roles.items() %}
+              <label class="role-option">
+                <input type="radio" name="role" value="{{ key }}" {% if selected_role == key %}checked{% endif %}>
+                <span class="role-icon">{{ role.icon }}</span>
+                {{ role.label }}
+              </label>
+            {% endfor %}
+            <label class="role-option">
+              <input type="radio" name="role" value="custom" {% if selected_role == 'custom' %}checked{% endif %}>
+              <span class="role-icon">CR</span>
+              Custom role
+            </label>
+          </div>
+          <div class="custom-role-field">
+            <label for="custom_role">Custom target role <span>(select Custom role above)</span></label>
+            <input id="custom_role" name="custom_role" type="text" value="{{ custom_role }}" placeholder="Example: Cybersecurity Analyst, Product Manager, Data Engineer">
+          </div>
+        </section>
+
+        <section class="card">
+          <label for="resume">Resume text <span>(paste as plain text - the more detail, the better)</span></label>
+          <textarea id="resume" name="resume" rows="12" placeholder="Paste your full resume here - work experience, skills, education, projects, certifications...">{{ resume }}</textarea>
+          {% if resume %}
+            <p class="hint align-right">{{ resume|length }} characters</p>
+          {% endif %}
+          <div class="upload-field">
+            <label for="resume_pdf">Or upload resume PDF <span>(text-based PDF, max 8 MB)</span></label>
+            <input id="resume_pdf" name="resume_pdf" type="file" accept="application/pdf,.pdf">
+            {% if uploaded_filename %}
+              <p class="hint">Selected PDF: {{ uploaded_filename }}</p>
+            {% endif %}
+          </div>
+          <p class="hint">If both are provided, the uploaded PDF will be analyzed.</p>
+        </section>
+
+        {% if error %}
+          <div class="err">{{ error }}</div>
+        {% endif %}
+
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">Analyze gaps</button>
+          <span>{% if resume_source %}Using {{ resume_source }}{% else %}Server-side processing with Flask{% endif %}</span>
+        </div>
+      </form>
+    {% endif %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Flask>=3.1,<4
+langchain>=0.3,<1
+langchain-google-genai>=2,<4
+pypdf>=5,<7
+python-dotenv>=1,<2
