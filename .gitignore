@@ -1,4 +1,6 @@
 .env
 .venv/
+resume_vectors.sqlite3
 __pycache__/
 *.py[cod]
+.tex

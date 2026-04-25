@@ -1,0 +1,817 @@
+\documentclass[12pt,a4paper]{report}
+
+% Packages
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{times}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{parskip}
+
+% Hyperref Setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+% Section Title Formatting
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries\centering}
+  {Chapter \thechapter}{10pt}{\Large}
+\titlespacing*{\chapter}{0pt}{20pt}{20pt}
+
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
+
+% Header / Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Resume Gap Analysis using RAG}
+\lhead{\small Dr. D. Y. Patil Institute of Technology}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Code Listing Style
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!60!black},
+  stringstyle=\color{red!70!black}
+}
+
+% TOC Formatting
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftsecfont}{\normalfont}
+\setlength{\cftbeforesecskip}{2pt}
+
+\begin{document}
+
+% TITLE PAGE
+\begin{titlepage}
+\begin{center}
+
+% Institution logo - replace with actual logo file if available
+\includegraphics[width=0.30\textwidth]{dypdpu_logo.png}\\[0.3cm]
+{\normalsize \textcolor{red!70!black}{Dr. D. Y. Patil Institute of Technology}}\\[0.5cm]
+% \rule{\linewidth}{0.5pt}\\[0.3cm]
+{\normalsize A}\\[0.1cm]
+{\normalsize Data Science and Big Data Analytics}\\
+{\normalsize Mini Project Report submitted to Savitribai Phule Pune University, Pune}\\[0.5cm]
+\includegraphics[width=0.22\textwidth]{Reportsppu.png}\\[0.3cm]
+
+% \rule{\linewidth}{0.5pt}\\[1cm]
+
+{\Huge \textbf{RESUME GAP ANALYSIS}}\\[0.4cm]
+{\Huge \textbf{USING RAG AND FLASK}}\\[1cm]
+
+% University seal placeholder
+% \includegraphics[width=0.18\textwidth]{sppu_seal.png}\\[0.8cm]
+
+{\normalsize In partial fulfilment for the awards of Degree of Engineering in}\\
+{\normalsize Computer Engineering}\\[1cm]
+
+{\normalsize \textbf{Submitted by}}\\[0.4cm]
+\begin{tabular}{ll}
+\textbf{Mr. Parth Pakhare} & \textbf{Exam Seat No. } \\
+\textbf{Miss. Mansi Gangurde} & \textbf{Exam Seat No. } \\
+\textbf{Mr. Aditya Kokate} & \textbf{Exam Seat No. } \\
+\end{tabular}\\[1cm]
+
+{\normalsize \textbf{Under the Guidance of}}\\[0.3cm]
+{\Large \textbf{Prof. Rubi Mandal}}\\
+{\Large \textbf{Assistant Professor}}\\[1cm]
+
+{\normalsize \textbf{Department of Computer Engineering}}\\[0.5cm]
+{\normalsize \textbf{2025--26}}
+
+\end{center}
+\end{titlepage}
+
+% CERTIFICATE PAGE
+\thispagestyle{empty}
+\begin{center}
+{\Large \textbf{Certificate}}
+\end{center}
+\vspace{0.5cm}
+
+\noindent This is to certify that,
+
+\vspace{0.5cm}
+\begin{tabular}{ll}
+Mr. Parth Pakhare & Exam Seat No.  \\
+Miss. Mansi Gangurde & Exam Seat No.  \\
+Mr. Aditya Kokate & Exam Seat No.  \\
+\end{tabular}
+
+\vspace{0.5cm}
+\noindent have successfully completed the Mini project entitled
+\textbf{``Resume Gap Analysis using RAG''} under my guidance in partial
+fulfilment of the requirements for the Third Year of Engineering in Computer
+Engineering under the Savitribai Phule Pune University during the academic
+year 2025--2026.
+
+\vspace{2cm}
+\noindent Date: \ldots\ldots\ldots\ldots\ldots \\[0.3cm]
+\noindent Place: \ldots\ldots\ldots\ldots\ldots
+
+\vspace{2cm}
+\begin{tabular}{p{5cm} p{5cm}}
+\textbf{Prof. Rubi Mandal} & \textbf{Dr. Chaya Ravi Jadhav} \\
+Project Guide & HOD \\[2cm]
+\multicolumn{2}{l}{\textbf{Dr. Nitin Sherje}} \\
+\multicolumn{2}{l}{Principal} \\
+\end{tabular}
+
+\newpage
+
+% TABLE OF CONTENTS
+\tableofcontents
+\newpage
+
+% CHAPTER 1: INTRODUCTION
+\chapter{Introduction}
+
+\section{Introduction}
+
+In today's highly competitive job market, the alignment between a candidate's
+existing skills and the requirements of a target job role has become more critical
+than ever. Recruiters and candidates alike face the challenge of quickly and
+accurately identifying the gaps in a resume with respect to a specific career
+path. Traditional manual processes are time-consuming, inconsistent, and do not
+scale well for modern placement and recruitment needs.
+
+The emergence of \textbf{Retrieval-Augmented Generation (RAG)} -- a technique
+that combines the retrieval of relevant information from a knowledge base with
+the generative power of large language models (LLMs) -- provides an opportunity
+to build intelligent, context-aware applications. When applied to career
+development, RAG can be used to semantically compare a candidate's resume
+against role-specific skill roadmaps, identify skill gaps, and generate a
+personalised learning roadmap.
+
+This project implements a \textbf{Flask-based web application} that performs
+intelligent Resume Gap Analysis. The system accepts a candidate's resume either
+as pasted plain text or as a text-based PDF upload. It also allows the user to
+choose from predefined roles such as Frontend Developer, Backend Developer,
+DevOps Engineer, Data Scientist, Full Stack Developer, and Android Developer,
+or enter a custom target role. The backend extracts resume text, retrieves
+relevant roadmap skill chunks from a local vector store, and uses Gemini through
+LangChain to generate a detailed gap analysis report and actionable roadmap.
+
+Key components of the proposed system include:
+
+\begin{enumerate}
+  \item \textbf{Resume Ingestion and Parsing:} Extraction of text from pasted
+        resume content or uploaded PDF resumes using Python and \texttt{pypdf}.
+  \item \textbf{Vector Store and Embeddings:} Converting roadmap skill chunks
+        into Gemini embedding vectors and storing them in a local SQLite-based
+        vector store for semantic retrieval.
+  \item \textbf{Retrieval-Augmented Generation:} Retrieving the most relevant
+        roadmap chunks using cosine similarity and passing them to Gemini as
+        focused context for analysis.
+  \item \textbf{Roadmap Generation:} Producing a structured, role-specific
+        learning roadmap that guides the candidate through high-priority,
+        medium-priority, and low-priority skill gaps.
+  \item \textbf{Flask Web Interface:} A lightweight, responsive HTML and CSS
+        interface rendered using Flask and Jinja templates.
+\end{enumerate}
+
+\section{Problem Addressed}
+
+The primary problem addressed by this project is the \textbf{inefficient and
+subjective identification of skill gaps} between a candidate's resume and a
+desired job role. Specific challenges include:
+
+\begin{enumerate}
+  \item \textbf{Manual Gap Analysis:} Identifying missing skills requires
+        significant human effort and domain expertise. This process is slow and
+        prone to inconsistency across different evaluators.
+  \item \textbf{Lack of Personalisation:} Generic skill-gap tools provide
+        one-size-fits-all feedback without considering the candidate's existing
+        background or target role.
+  \item \textbf{Absence of Actionable Roadmaps:} Most resume screening tools
+        highlight gaps but do not provide a structured, prioritised learning path.
+  \item \textbf{Scalability in Recruitment:} Organisations receiving large
+        volumes of applications cannot feasibly perform manual gap analysis at
+        scale.
+  \item \textbf{Dynamic Job Market:} Job requirements evolve rapidly; static
+        keyword matching approaches fail to capture semantic equivalence between
+        skills.
+\end{enumerate}
+
+\section{Methods Used}
+
+Several techniques and frameworks are employed in the project to address these
+challenges:
+
+\begin{enumerate}
+  \item \textbf{Retrieval-Augmented Generation (RAG):}
+  \begin{itemize}
+    \item RAG combines a retrieval module with an LLM-based generation module.
+    \item In this project, role roadmap chunks are retrieved from a local vector
+          store and supplied to Gemini as grounded context.
+    \item \textit{Strengths:} Context-aware, improves relevance, and reduces
+          purely unguided generation.
+    \item \textit{Weaknesses:} Depends on the quality of retrieved roadmap chunks
+          and embedding similarity.
+  \end{itemize}
+
+  \item \textbf{Gemini Embeddings and Vector Similarity:}
+  \begin{itemize}
+    \item Gemini embedding models convert roadmap text and resume-role queries
+          into high-dimensional vectors.
+    \item Cosine similarity is used to retrieve roadmap chunks most relevant to
+          the candidate's resume and selected role.
+    \item \textit{Strengths:} Captures semantic similarity beyond keyword
+          matching.
+    \item \textit{Weaknesses:} Requires API availability and correct model
+          configuration.
+  \end{itemize}
+
+  \item \textbf{SQLite-Based Local Vector Store:}
+  \begin{itemize}
+    \item A local SQLite database stores roadmap chunks and their embedding
+          vectors.
+    \item \textit{Strengths:} Simple, portable, serverless, and suitable for a
+          mini-project.
+    \item \textit{Weaknesses:} Less scalable than specialised vector databases
+          for very large knowledge bases.
+  \end{itemize}
+
+  \item \textbf{Large Language Model using Gemini:}
+  \begin{itemize}
+    \item Gemini is used to generate structured JSON output containing match
+          score, summary, strengths, matched skills, missing skills, and roadmap.
+    \item \textit{Strengths:} Produces readable, detailed, and structured output.
+    \item \textit{Weaknesses:} Depends on prompt quality and external API
+          availability.
+  \end{itemize}
+
+  \item \textbf{Flask Web Framework:}
+  \begin{itemize}
+    \item Flask exposes the RAG pipeline through server-rendered web pages.
+    \item \textit{Strengths:} Simple, flexible, and easy to integrate with Python
+          AI libraries.
+    \item \textit{Weaknesses:} Requires additional production tooling for
+          high-concurrency deployment.
+  \end{itemize}
+\end{enumerate}
+
+\section{Gaps and Limitations}
+
+Despite recent advances in NLP and RAG-based systems, several gaps remain:
+
+\begin{enumerate}
+  \item \textbf{Domain-Specific Knowledge:} Generic LLMs may not always reflect
+        niche or emerging technologies, requiring richer and regularly updated
+        knowledge bases.
+  \item \textbf{Resume Format Variability:} Resumes come in highly varied
+        formats, and PDF parsing may lose structural context such as tables,
+        columns, or icons.
+  \item \textbf{Scanned PDF Limitation:} The current implementation supports
+        text-based PDFs. Image-only scanned resumes require OCR, which is not
+        included in the present version.
+  \item \textbf{Lack of Ground Truth:} There is no universally agreed benchmark
+        dataset for resume-to-role gap analysis, making objective evaluation
+        difficult.
+  \item \textbf{Real-Time Roadmap Updates:} The generated roadmap does not
+        dynamically update as the candidate completes learning milestones.
+\end{enumerate}
+
+\section{Mini Project Idea}
+
+\textbf{Project Title:} ``Intelligent Resume Gap Analysis and Career Roadmap
+Generation using RAG and Flask''
+
+\textbf{Objective:} To develop an AI-powered web application that (1)
+semantically analyses a candidate's resume against a specified job role, (2)
+identifies specific skill and experience gaps, and (3) generates a structured,
+prioritised learning roadmap to help the candidate become job-ready.
+
+\textbf{Proposed Methodology:}
+
+\begin{enumerate}
+  \item \textbf{Input Collection:}
+        Paste resume text or upload a text-based resume PDF and select a
+        predefined or custom target role through the Flask web interface.
+  \item \textbf{Resume Processing:}
+        Extract text from the resume input and validate minimum content length.
+  \item \textbf{Roadmap Vector Retrieval:}
+        Embed predefined roadmap skill chunks using Gemini embeddings and store
+        them in a local SQLite vector store.
+  \item \textbf{RAG Context Selection:}
+        Embed the resume-role query and retrieve the most relevant roadmap chunks
+        using cosine similarity.
+  \item \textbf{Gap Analysis Generation:}
+        Pass resume text, target role, and retrieved roadmap context to Gemini
+        through a LangChain prompt-model-parser chain.
+  \item \textbf{Web Interface:}
+        Display the match score, strengths, matched skills, missing skills, and
+        learning roadmap through a clean Flask-rendered HTML dashboard.
+\end{enumerate}
+
+\section{Expected Outcomes}
+
+\begin{itemize}
+  \item Automated identification of skill, tool, and experience gaps between a
+        candidate's resume and a target job role.
+  \item A structured, prioritised, and time-bound career development roadmap.
+  \item Reduced time and effort for candidates and career guidance teams.
+  \item A reusable, extensible Flask-based web application deployable for
+        institutional career guidance centres.
+\end{itemize}
+
+% CHAPTER 2: SYSTEM ARCHITECTURE & METHODOLOGY
+\chapter{System Architecture \& Methodology}
+
+\section{System Overview}
+
+The proposed system follows a modular pipeline architecture consisting of five
+primary stages: \textbf{Input Processing}, \textbf{Embedding \& Vector Storage},
+\textbf{Retrieval}, \textbf{Generation}, and \textbf{Presentation}. Flask serves
+as the application layer connecting all modules.
+
+\begin{figure}[H]
+  \centering
+  % Replace with actual architecture diagram image file
+  \includegraphics[width=0.85\textwidth]{system_architecture.png}
+  % \fbox{\parbox{0.8\textwidth}{\centering \vspace{2cm}
+  % [System Architecture Diagram: Input $\rightarrow$ Parser $\rightarrow$
+  % Embeddings $\rightarrow$ SQLite Vector Store $\rightarrow$ Gemini $\rightarrow$ Output]
+  % \vspace{2cm}}}
+  \caption{High-level system architecture of the Resume Gap Analysis application.}
+\end{figure}
+
+\section{Technology Stack}
+
+\begin{table}[H]
+\centering
+\caption{Technology stack used in the project.}
+\begin{tabular}{|p{3.5cm}|p{4cm}|p{5.5cm}|}
+\hline
+\textbf{Component} & \textbf{Technology} & \textbf{Purpose} \\
+\hline
+Backend Language & Python & Main programming language for web backend, AI orchestration, PDF parsing, and data handling \\
+\hline
+Web Framework & Flask & Server-rendered web application, routing, validation, and form handling \\
+\hline
+Template Engine & Jinja2 & Dynamic rendering of forms, errors, selected roles, and generated results \\
+\hline
+Frontend & HTML5 and CSS3 & Lightweight user interface without React or frontend JavaScript \\
+\hline
+PDF Parsing & pypdf & Extract text from uploaded text-based resume PDFs \\
+\hline
+LLM Orchestration & LangChain & Prompt-template, model, and output-parser chain management \\
+\hline
+LLM & Gemini via langchain-google-genai & Gap analysis, match scoring, strengths, and roadmap generation \\
+\hline
+Embeddings & Gemini Embeddings & Generate semantic vectors for roadmap chunks and resume-role queries \\
+\hline
+Vector Store & SQLite with cosine similarity & Local storage and retrieval of embedded roadmap chunks \\
+\hline
+Configuration & python-dotenv & Load API keys and model settings from environment variables \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Dataset and Input Sources}
+
+The system does not rely on a fixed offline resume dataset; instead, it processes
+user-supplied input dynamically at runtime:
+
+\begin{itemize}
+  \item \textbf{Resume Text:} Entered directly by the user in a textarea. This
+        option is useful when the resume is already available as plain text.
+  \item \textbf{Resume PDF:} Uploaded by the candidate via the web interface.
+        The backend extracts selectable text using \texttt{pypdf}. If both text
+        and PDF are provided, the uploaded PDF is used.
+  \item \textbf{Target Role:} Selected from predefined roadmap roles or entered
+        as a custom target role.
+  \item \textbf{Roadmap Knowledge Base:} A built-in collection of role-specific
+        roadmap skill categories inspired by roadmap-style learning paths.
+\end{itemize}
+
+\section{Data Preprocessing Techniques}
+
+\begin{itemize}
+  \item \textbf{PDF Text Extraction:} Raw text is extracted from uploaded PDF
+        resumes using \texttt{pypdf}. Image-only scanned PDFs are rejected with
+        a validation message.
+  \item \textbf{Input Validation:} The backend checks resume length, custom role
+        text, PDF file type, PDF size, and missing API key configuration.
+  \item \textbf{Roadmap Chunking:} Each predefined roadmap is split line by line
+        into skill-category chunks such as databases, APIs, testing, deployment,
+        security, and cloud.
+  \item \textbf{Embedding Generation:} Roadmap chunks and resume-role queries are
+        encoded using Gemini embeddings.
+  \item \textbf{SQLite Vector Storage:} Embedding vectors are stored as JSON in a
+        local SQLite database and retrieved using cosine similarity.
+  \item \textbf{Prompt Construction:} Retrieved roadmap chunks are inserted into
+        a structured LangChain prompt along with the resume text and target role.
+\end{itemize}
+
+\section{Challenges Faced During Implementation}
+
+\begin{itemize}
+  \item \textbf{PDF Parsing Inconsistency:} Highly designed resumes may contain
+        tables, columns, or icons that do not extract cleanly. The current system
+        handles text-based PDFs and asks users to paste text if extraction fails.
+  \item \textbf{Embedding Model Compatibility:} Older embedding model names may
+        not be supported by the current Gemini API version. This was resolved by
+        configuring the stable Gemini embedding model and rebuilding the vector
+        store when the embedding model changes.
+  \item \textbf{Vector Database Portability:} Dedicated vector databases can
+        require compiled dependencies. A SQLite-based vector store was used to
+        keep the mini-project portable and easy to run on Windows.
+  \item \textbf{LLM Output Consistency:} The LLM may return extra text unless
+        prompted carefully. This was addressed by requesting strict JSON output
+        and normalising the parsed result on the backend.
+  \item \textbf{API Latency:} Gemini calls and embedding generation may introduce
+        response delay, especially during the first run when roadmap vectors are
+        created.
+\end{itemize}
+
+% CHAPTER 3: EXPLORATORY DATA ANALYSIS & SYSTEM DESIGN
+\chapter{Exploratory Analysis \& System Design}
+
+\section{Resume Skill Distribution Analysis}
+
+To understand typical resume profiles, a preliminary conceptual analysis was
+considered across common domains such as Software Development, Data Science, and
+Cloud Engineering. Skills are commonly grouped into categories such as
+\textit{Programming Languages, Frameworks, Databases, Cloud Platforms, Testing,}
+and \textit{Soft Skills}. The implemented system follows a similar idea by
+organising roadmap knowledge into role-specific skill categories.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{skill_distribution.png}
+  % \fbox{\parbox{0.75\textwidth}{\centering \vspace{2cm}
+  % [Bar Chart: Frequency of skill categories across sample resumes]
+  % \vspace{2cm}}}
+  \caption{Distribution of skill categories across sample resumes.}
+\end{figure}
+
+The analysis highlights that technical resumes often show strong alignment in
+programming languages and frameworks, while gaps frequently appear in cloud,
+deployment, testing, security, and system design practices.
+
+\section{Semantic Similarity Heatmap}
+
+The system uses cosine similarity between embedding vectors to estimate how
+closely a resume-role query matches stored roadmap skill chunks. A heatmap can
+be used to visualise such alignment scores, where darker cells indicate higher
+semantic similarity.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{similarity_heatmap.png}
+  % \fbox{\parbox{0.75\textwidth}{\centering \vspace{2cm}
+  % [Heatmap: Cosine similarity between resume sections and roadmap requirements]
+  % \vspace{2cm}}}
+  \caption{Semantic similarity heatmap between resume chunks and role requirements.}
+\end{figure}
+
+This similarity-based approach helps identify which roadmap areas are most
+relevant to the candidate's resume and target role, allowing Gemini to generate
+a focused gap analysis.
+
+\section{RAG Pipeline Flow Diagram}
+
+Figure~3.3 illustrates the end-to-end RAG pipeline implemented in the
+application.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{rag_pipeline.png}
+  % \fbox{\parbox{0.85\textwidth}{\centering \vspace{2.5cm}
+  % [Flow Diagram: Resume Text/PDF $\rightarrow$ Parser $\rightarrow$
+  % Roadmap Chunks $\rightarrow$ Gemini Embeddings $\rightarrow$
+  % SQLite Vector Store $\rightarrow$ Retriever $\rightarrow$
+  % Gemini Prompt $\rightarrow$ Gap Report + Roadmap $\rightarrow$ Flask UI]
+  % \vspace{2.5cm}}}
+  \caption{End-to-end RAG pipeline for resume gap analysis.}
+\end{figure}
+
+% CHAPTER 4: IMPLEMENTATION
+\chapter{Implementation}
+
+\section{Flask Application Structure}
+
+The application follows a compact Flask project layout:
+
+\begin{lstlisting}[language=bash, caption={Project directory structure.}]
+New project/
+|-- app.py                         # Flask routes, RAG logic, PDF parsing, Gemini calls
+|-- requirements.txt               # Python dependencies
+|-- resume_vectors.sqlite3          # Generated local vector store after first RAG run
+|-- templates/
+|   |-- index.html                 # Form and result page rendered with Jinja
+|-- static/
+|   |-- styles.css                 # Plain CSS styling
+|-- .env                           # Local API key and model settings
+|-- .env.example                   # Example environment variables
+|-- README.md
+\end{lstlisting}
+
+\section{Core RAG Implementation}
+
+The retrieval and generation logic is implemented using LangChain, Gemini
+embeddings, a local SQLite vector store, and Gemini chat generation. The key
+implementation pattern is shown below:
+
+\begin{lstlisting}[language=Python, caption={RAG pipeline core logic in app.py.}]
+def retrieve_roadmap_context(resume, role_context, api_key):
+    ensure_roadmap_vector_store(api_key)
+    embedder = get_embedding_model(api_key)
+
+    query = (
+        f"Target role: {role_context['label']}\n"
+        f"Resume excerpt: {resume[:1500]}"
+    )
+    query_embedding = embedder.embed_query(
+        query,
+        task_type="RETRIEVAL_QUERY",
+    )
+
+    retrieved = query_roadmap_vectors(
+        query_embedding,
+        role_context.get("role_key", ""),
+    )
+
+    chunks = []
+    for item in retrieved:
+        chunks.append(
+            f"[Retrieved: {item['role_label']} / {item['category']}]\n"
+            f"{item['text']}"
+        )
+    return "\n\n".join(chunks)
+
+def analyze_resume(resume, role_context):
+    api_key = os.getenv("GEMINI_API_KEY")
+    chain = get_analysis_chain(api_key)
+    skills_context = retrieve_roadmap_context(resume, role_context, api_key)
+
+    response_text = chain.invoke({
+        "role_label": role_context["label"],
+        "resume": resume[:6000],
+        "skills_context": skills_context,
+    })
+    return normalize_result(parse_json_response(response_text))
+\end{lstlisting}
+
+\section{Flask Route Implementation}
+
+\begin{lstlisting}[language=Python, caption={Main Flask routes in app.py.}]
+@app.get("/")
+def index():
+    return render_template(
+        "index.html",
+        roles=ROADMAPS,
+        selected_role="frontend",
+        resume="",
+        result=None,
+        error="",
+    )
+
+@app.get("/analyze")
+def analyze_get():
+    return redirect(url_for("index"))
+
+@app.post("/analyze")
+def analyze():
+    pasted_resume = request.form.get("resume", "").strip()
+    selected_role = request.form.get("role", "frontend")
+    custom_role = request.form.get("custom_role", "").strip()
+    resume_pdf = request.files.get("resume_pdf")
+
+    resume = pasted_resume
+    if resume_pdf and resume_pdf.filename:
+        resume = extract_pdf_text(resume_pdf)
+
+    role_context = get_role_context(selected_role, custom_role)
+    result = analyze_resume(resume, role_context)
+
+    return render_template(
+        "index.html",
+        roles=ROADMAPS,
+        selected_role=selected_role,
+        custom_role=custom_role,
+        role_display=role_context,
+        resume=pasted_resume,
+        result=result,
+        gap_groups=split_gaps(result.get("missingSkills")),
+    )
+\end{lstlisting}
+
+\section{Prompt Engineering for Gap Analysis}
+
+A structured LangChain prompt template was designed to guide Gemini in producing
+consistent, well-formatted JSON output. The prompt includes the candidate's
+resume, target role, and retrieved roadmap context. It explicitly requests the
+following fields: \textit{matchScore}, \textit{summary}, \textit{strengths},
+\textit{matchedSkills}, \textit{missingSkills}, and \textit{roadmap}. Temperature
+is set to 0.3 to balance creativity with factual consistency.
+
+% CHAPTER 5: EXPERIMENTAL RESULTS AND ANALYSIS
+\chapter{Experimental Results and Analysis}
+
+\section{Results Summary}
+
+The system was functionally evaluated using sample resume inputs and multiple
+target role selections including Frontend Developer, Backend Developer, Full
+Stack Developer, Data Scientist, DevOps Engineer, Android Developer, and custom
+roles. The evaluation focused on three criteria: \textbf{Input Handling},
+\textbf{Retrieval Relevance}, and \textbf{Output Completeness}.
+
+\begin{table}[H]
+\centering
+\caption{Summary of functional evaluation results.}
+\begin{tabular}{|p{4cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Test Area} & \textbf{Status} & \textbf{Observation} \\
+\hline
+Plain text resume input & Successful & Resume text was accepted, validated, and analysed. \\
+\hline
+PDF resume upload & Successful & Text-based PDFs were parsed using \texttt{pypdf}. \\
+\hline
+Predefined role selection & Successful & Roadmap chunks were retrieved for selected roles. \\
+\hline
+Custom role input & Successful & Gemini inferred role-specific context with retrieved support chunks. \\
+\hline
+RAG retrieval & Successful & Relevant roadmap chunks were selected using embedding similarity. \\
+\hline
+JSON result rendering & Successful & Match score, gaps, strengths, and roadmap were rendered in the UI. \\
+\hline
+\end{tabular}
+\end{table}
+
+The system successfully generated structured gap analysis reports and learning
+roadmaps for the tested role categories. The first RAG run creates the local
+vector store, while later runs reuse the stored embeddings unless the embedding
+model or roadmap count changes.
+
+\section{Interpretation of Results}
+
+\begin{itemize}
+  \item \textbf{Gap Analysis Quality:} RAG-based context retrieval helps Gemini
+        focus on role-relevant skill categories rather than relying only on a
+        broad prompt.
+  \item \textbf{Roadmap Usefulness:} The generated roadmaps provide phased skill
+        development suggestions with resources, making the output actionable for
+        candidates.
+  \item \textbf{Response Time:} The first analysis can take longer because the
+        roadmap vector store is created. Subsequent analyses are faster because
+        stored vectors are reused.
+  \item \textbf{Input Flexibility:} Supporting both pasted text and PDF upload
+        improves usability for candidates with different resume formats.
+\end{itemize}
+
+\section{Sample Output: Gap Analysis Report}
+
+Figure~5.1 shows a sample gap analysis report generated by the system for a
+candidate applying for a Data Science or Machine Learning related role.
+
+\begin{figure}[H]
+  \centering
+  % \includegraphics[width=0.88\textwidth]{sample_output.png}
+  \fbox{\parbox{0.85\textwidth}{\centering \vspace{3cm}
+  [Screenshot: Sample Gap Analysis Output - Missing Skills: MLOps,
+  Kubernetes, Feature Stores | Roadmap: Week 1--2: MLOps fundamentals
+  (Coursera), Week 3--4: Docker \& Kubernetes (KodeKloud), ...]
+  \vspace{3cm}}}
+  \caption{Sample gap analysis and roadmap output for a Data Science candidate.}
+\end{figure}
+
+\section{Comparison with Existing Approaches}
+
+\begin{table}[H]
+\centering
+\caption{Comparison of the proposed system with existing approaches.}
+\begin{tabular}{|p{3.5cm}|p{3cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Approach} & \textbf{Method} & \textbf{Roadmap Support} & \textbf{Context Awareness} \\
+\hline
+Keyword Matching & Exact word overlap & No & Low \\
+\hline
+Resume Parser APIs & NLP + rules & No & Medium \\
+\hline
+Pure LLM & Prompt only & Yes & Medium \\
+\hline
+\textbf{Proposed System} & \textbf{RAG + Gemini + Flask} & \textbf{Yes} & \textbf{High} \\
+\hline
+\end{tabular}
+\end{table}
+
+The proposed RAG-based approach is more context-aware than keyword matching
+because it retrieves semantically relevant roadmap chunks before generating the
+final analysis.
+
+% CHAPTER 6: CONCLUSION AND FUTURE SCOPE
+\chapter{Conclusion and Future Scope}
+
+\section{Conclusion}
+
+This project has successfully demonstrated the development of an intelligent
+Resume Gap Analysis system using Retrieval-Augmented Generation (RAG), Gemini,
+LangChain, and Flask. The system addresses a real-world problem in career
+development by comparing a candidate's resume with a target job role and
+generating both a detailed gap analysis and a structured learning roadmap.
+
+\begin{itemize}
+  \item The RAG pipeline retrieves relevant roadmap skill chunks from a local
+        SQLite vector store before generating the final analysis.
+  \item Gemini embeddings enable semantic matching between the resume-role query
+        and stored roadmap chunks.
+  \item Gemini chat generation produces a structured report containing match
+        score, summary, strengths, matched skills, missing skills, and roadmap.
+  \item The Flask-based web interface provides an accessible, user-friendly
+        platform for candidates and career guidance teams.
+  \item The project keeps the API key on the backend and uses plain HTML and CSS
+        for a lightweight frontend.
+\end{itemize}
+
+The project demonstrates that combining modern NLP techniques with a lightweight
+web framework can produce practically useful AI applications for education,
+placement preparation, and career guidance.
+
+\section{Future Scope}
+
+The following enhancements are planned for future iterations of the project:
+
+\begin{enumerate}
+  \item \textbf{OCR for Scanned Resumes:} Add OCR support for image-only PDF
+        resumes using tools such as Tesseract.
+  \item \textbf{Expanded Knowledge Base:} Add company-specific role requirements,
+        course catalogs, certification details, and live learning resources.
+  \item \textbf{Dedicated Vector Database:} Replace the local SQLite vector store
+        with ChromaDB, FAISS, Pinecone, or Weaviate for larger-scale deployment.
+  \item \textbf{Multi-Resume Batch Processing:} Enable HR teams to upload and
+        analyse multiple resumes for a single target role.
+  \item \textbf{Dynamic Roadmap Tracking:} Integrate user accounts where
+        candidates can mark milestones as complete and receive updated roadmaps.
+  \item \textbf{LinkedIn and GitHub Integration:} Supplement resumes with live
+        profile and project evidence.
+  \item \textbf{Multilingual Support:} Extend the system to support resumes in
+        multiple languages using multilingual embedding models.
+  \item \textbf{Streaming Responses:} Implement Server-Sent Events (SSE) to show
+        LLM output progressively.
+\end{enumerate}
+
+% REFERENCES
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\begin{enumerate}
+
+\item Lewis, P., Perez, E., Piktus, A., et al.\ (2020). Retrieval-Augmented
+Generation for Knowledge-Intensive NLP Tasks. \textit{Advances in Neural
+Information Processing Systems (NeurIPS)}, 33, 9459--9474.\\
+\textgreater\space DOI: 10.48550/arXiv.2005.11401\\
+\textit{(Foundational paper on RAG; used to justify the retrieval-augmented
+approach for context-grounded generation.)}
+
+\item Google AI for Developers.\ (2025). Gemini API Embeddings Documentation.\\
+\textgreater\space \url{https://ai.google.dev/gemini-api/docs/embeddings}\\
+\textit{(Reference for Gemini embedding models used to create semantic vectors
+for roadmap retrieval.)}
+
+\item Google AI for Developers.\ (2025). Gemini API Documentation.\\
+\textgreater\space \url{https://ai.google.dev/gemini-api/docs}\\
+\textit{(Reference for Gemini model usage in content generation.)}
+
+\item Chase, H.\ (2022). LangChain: Building Applications with LLMs through
+Composability. \textit{GitHub Repository.}\\
+\textgreater\space \url{https://github.com/langchain-ai/langchain}\\
+\textit{(LangChain framework used for prompt, model, and parser orchestration.)}
+
+\item Grinberg, M.\ (2018). \textit{Flask Web Development: Developing Web
+Applications with Python} (2nd ed.). O'Reilly Media.\\
+\textit{(Reference for Flask application design and best practices.)}
+
+\item Python Software Foundation.\ (n.d.). SQLite3 Python Documentation.\\
+\textgreater\space \url{https://docs.python.org/3/library/sqlite3.html}\\
+\textit{(Reference for the local SQLite vector store used in the project.)}
+
+\item pypdf Contributors.\ (n.d.). pypdf Documentation.\\
+\textgreater\space \url{https://pypdf.readthedocs.io/}\\
+\textit{(Reference for PDF text extraction from uploaded resumes.)}
+
+\end{enumerate}
+
+\end{document}

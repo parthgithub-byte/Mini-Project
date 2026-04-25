@@ -1,9 +1,12 @@
 import json
+import math
 import os
 import re
+import sqlite3
 from io import BytesIO
+from pathlib import Path
 
-from flask import Flask, render_template, request
+from flask import Flask, redirect, render_template, request, url_for
 
 try:
     from dotenv import load_dotenv
@@ -19,6 +22,11 @@ app = Flask(__name__)
 GEMINI_MODEL = os.getenv(
     "GEMINI_MODEL", "gemini-3.1-flash-lite-preview"
 )
+GEMINI_EMBEDDING_MODEL = os.getenv(
+    "GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001"
+)
+VECTOR_DB_PATH = Path(os.getenv("VECTOR_DB_PATH", "resume_vectors.sqlite3"))
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "6"))
 ROADMAPS = {
     "frontend": {
         "label": "Frontend Developer",
@@ -138,6 +146,7 @@ TYPE_COLORS = {
 }
 
 MAX_PDF_BYTES = 8 * 1024 * 1024
+_VECTOR_STORE_READY = False
 
 ANALYSIS_PROMPT_TEMPLATE = """You are an expert career coach. Analyze this resume against the {role_label} skill roadmap.
 
@@ -173,6 +182,218 @@ def get_analysis_chain(api_key):
         max_output_tokens=4096,
     )
     return prompt | model | StrOutputParser()
+
+
+def get_embedding_model(api_key):
+    try:
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    except ImportError as exc:
+        raise RuntimeError(
+            "LangChain Gemini dependencies are not installed. "
+            "Run: pip install -r requirements.txt"
+        ) from exc
+
+    return GoogleGenerativeAIEmbeddings(
+        model=GEMINI_EMBEDDING_MODEL,
+        google_api_key=api_key,
+    )
+
+
+def build_roadmap_documents():
+    documents = []
+    for role_key, roadmap in ROADMAPS.items():
+        for index, line in enumerate(roadmap["skills"].splitlines()):
+            if not line.strip():
+                continue
+            category, _, skills = line.partition(":")
+            category = category.strip() or "GENERAL"
+            text = (
+                f"Role: {roadmap['label']}\n"
+                f"Category: {category}\n"
+                f"Important skills: {skills.strip() or line.strip()}"
+            )
+            documents.append(
+                {
+                    "id": f"{role_key}-{index}",
+                    "text": text,
+                    "metadata": {
+                        "role_key": role_key,
+                        "role_label": roadmap["label"],
+                        "category": category,
+                    },
+                }
+            )
+    return documents
+
+
+def get_vector_connection():
+    if VECTOR_DB_PATH.parent != Path("."):
+        VECTOR_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(VECTOR_DB_PATH)
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS roadmap_vectors (
+            id TEXT PRIMARY KEY,
+            role_key TEXT NOT NULL,
+            role_label TEXT NOT NULL,
+            category TEXT NOT NULL,
+            text TEXT NOT NULL,
+            embedding TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS vector_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """
+    )
+    return conn
+
+
+def ensure_roadmap_vector_store(api_key):
+    global _VECTOR_STORE_READY
+    if _VECTOR_STORE_READY:
+        return
+
+    documents = build_roadmap_documents()
+    expected_count = len(documents)
+    with get_vector_connection() as conn:
+        current_count = conn.execute(
+            "SELECT COUNT(*) FROM roadmap_vectors"
+        ).fetchone()[0]
+        stored_model = conn.execute(
+            "SELECT value FROM vector_metadata WHERE key = 'embedding_model'"
+        ).fetchone()
+        stored_count = conn.execute(
+            "SELECT value FROM vector_metadata WHERE key = 'document_count'"
+        ).fetchone()
+
+        store_matches = (
+            current_count == expected_count
+            and stored_model
+            and stored_model[0] == GEMINI_EMBEDDING_MODEL
+            and stored_count
+            and stored_count[0] == str(expected_count)
+        )
+        if store_matches:
+            _VECTOR_STORE_READY = True
+            return
+
+        conn.execute("DELETE FROM roadmap_vectors")
+        conn.execute("DELETE FROM vector_metadata")
+        embedder = get_embedding_model(api_key)
+        texts = [doc["text"] for doc in documents]
+        embeddings = embedder.embed_documents(
+            texts,
+            task_type="RETRIEVAL_DOCUMENT",
+        )
+        conn.executemany(
+            """
+            INSERT INTO roadmap_vectors
+                (id, role_key, role_label, category, text, embedding)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (
+                    doc["id"],
+                    doc["metadata"]["role_key"],
+                    doc["metadata"]["role_label"],
+                    doc["metadata"]["category"],
+                    doc["text"],
+                    json.dumps(embedding),
+                )
+                for doc, embedding in zip(documents, embeddings)
+            ],
+        )
+        conn.executemany(
+            "INSERT INTO vector_metadata (key, value) VALUES (?, ?)",
+            [
+                ("embedding_model", GEMINI_EMBEDDING_MODEL),
+                ("document_count", str(expected_count)),
+            ],
+        )
+        conn.commit()
+    _VECTOR_STORE_READY = True
+
+
+def cosine_similarity(left, right):
+    dot = sum(a * b for a, b in zip(left, right))
+    left_norm = math.sqrt(sum(a * a for a in left))
+    right_norm = math.sqrt(sum(b * b for b in right))
+    if not left_norm or not right_norm:
+        return 0.0
+    return dot / (left_norm * right_norm)
+
+
+def query_roadmap_vectors(query_embedding, role_key=""):
+    sql = (
+        "SELECT role_label, category, text, embedding "
+        "FROM roadmap_vectors"
+    )
+    params = ()
+    if role_key:
+        sql += " WHERE role_key = ?"
+        params = (role_key,)
+
+    with get_vector_connection() as conn:
+        rows = conn.execute(sql, params).fetchall()
+
+    scored = []
+    for role_label, category, text, embedding_json in rows:
+        embedding = json.loads(embedding_json)
+        scored.append(
+            {
+                "score": cosine_similarity(query_embedding, embedding),
+                "role_label": role_label,
+                "category": category,
+                "text": text,
+            }
+        )
+    scored.sort(key=lambda item: item["score"], reverse=True)
+    return scored[:RAG_TOP_K]
+
+
+def retrieve_roadmap_context(resume, role_context, api_key):
+    ensure_roadmap_vector_store(api_key)
+    embedder = get_embedding_model(api_key)
+    query = (
+        f"Target role: {role_context['label']}\n"
+        f"Resume excerpt: {resume[:1500]}"
+    )
+    query_embedding = embedder.embed_query(
+        query,
+        task_type="RETRIEVAL_QUERY",
+    )
+    retrieved = query_roadmap_vectors(
+        query_embedding,
+        role_context.get("role_key", ""),
+    )
+
+    if not retrieved:
+        return role_context["skills_context"]
+
+    chunks = []
+    for item in retrieved:
+        chunks.append(
+            f"[Retrieved: {item['role_label']} / {item['category']}]\n"
+            f"{item['text']}"
+        )
+
+    if role_context.get("role_key"):
+        intro = (
+            "Use these retrieved roadmap chunks from the local SQLite vector "
+            "store as the primary skill context:"
+        )
+    else:
+        intro = (
+            "No predefined roadmap was selected. Use these retrieved chunks "
+            "from similar roadmap roles as supporting context, then infer any "
+            f"additional skills needed for {role_context['label']}:"
+        )
+    return f"{intro}\n\n" + "\n\n".join(chunks)
 
 
 def get_message_text(message):
@@ -254,6 +475,7 @@ def get_role_context(role, custom_role=""):
         return {
             "label": roadmap["label"],
             "icon": roadmap["icon"],
+            "role_key": role,
             "skills_context": (
                 f"Use this roadmap.sh-style skill list for {roadmap['label']}:\n"
                 f"{roadmap['skills']}"
@@ -264,6 +486,7 @@ def get_role_context(role, custom_role=""):
     return {
         "label": label,
         "icon": "CR",
+        "role_key": "",
         "skills_context": (
             "No predefined roadmap was selected. Infer a practical, current, "
             f"roadmap.sh-style skill roadmap for a {label}. Include core "
@@ -279,11 +502,12 @@ def analyze_resume(resume, role_context):
         raise RuntimeError("GEMINI_API_KEY is not configured on the server.")
 
     chain = get_analysis_chain(api_key)
+    skills_context = retrieve_roadmap_context(resume, role_context, api_key)
     response_text = chain.invoke(
         {
             "role_label": role_context["label"],
             "resume": resume[:6000],
-            "skills_context": role_context["skills_context"],
+            "skills_context": skills_context,
         }
     )
     return normalize_result(parse_json_response(get_message_text(response_text)))
@@ -314,6 +538,11 @@ def index():
         error="",
         type_colors=TYPE_COLORS,
     )
+
+
+@app.get("/analyze")
+def analyze_get():
+    return redirect(url_for("index"))
 
 
 @app.post("/analyze")

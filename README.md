@@ -18,6 +18,8 @@ The project is intentionally split into a simple HTML/CSS frontend and a Python 
 | LangChain | AI orchestration | Provides a clean prompt-model-parser chain, making it easier to extend the AI workflow later. |
 | Gemini | Resume analysis LLM | Generates the skill-gap analysis, match score, strengths, and roadmap recommendations. |
 | langchain-google-genai | Gemini integration for LangChain | Connects LangChain with Google's Gemini models using the server-side API key. |
+| Gemini Embeddings | Text embeddings for retrieval | Converts roadmap skill chunks and resume-role queries into vectors for similarity search. |
+| SQLite vector store | Local vector storage and retrieval | Stores embedded roadmap chunks locally and performs cosine-similarity retrieval without requiring a separate database server. |
 | pypdf | PDF text extraction | Parses text-based resume PDFs so users do not have to manually copy/paste resume content. |
 | python-dotenv | Environment variable loading | Loads `GEMINI_API_KEY` from `.env` during local development. |
 
@@ -27,6 +29,7 @@ The project is intentionally split into a simple HTML/CSS frontend and a Python 
 - Add a custom target role when the predefined options do not fit.
 - Paste resume text manually or upload a text-based PDF resume.
 - Generate match score, summary, strengths, matched skills, missing skills, and a learning roadmap.
+- Use RAG with a local SQLite vector store to retrieve relevant roadmap skill chunks.
 - Keep Gemini API key on the backend only.
 - Use plain HTML and CSS in the browser, with no React or frontend JavaScript.
 
@@ -39,8 +42,30 @@ This project uses applied data science and AI concepts to turn unstructured resu
 - Information extraction is used to identify matched skills, missing skills, evidence from the resume, and priority levels.
 - Classification-style reasoning is used when the model groups missing skills into high, medium, and low priority.
 - Recommendation logic is used when the model generates a personalized learning roadmap and suggests resources.
+- Embeddings are used to convert roadmap skill chunks and the resume-role query into vectors.
+- A local vector database is used to store and retrieve relevant roadmap chunks.
+- RAG is used to provide Gemini with focused skill context before it generates the final analysis.
 - PDF text extraction is used as a preprocessing step so uploaded resumes can be converted into text before AI analysis.
 - Output normalization is used in the backend to keep the AI response consistent before rendering it in the UI.
+
+## RAG and Vector Database Implementation
+
+The project now includes a retrieval-augmented generation workflow.
+
+1. The predefined roadmap skill lists are split into smaller skill-category chunks.
+2. Each chunk is embedded using Gemini embeddings.
+3. The embeddings are stored in a local SQLite vector store at `resume_vectors.sqlite3`.
+4. For each analysis, the app embeds a query made from the selected role and resume excerpt.
+5. The vector store retrieves the most relevant roadmap chunks using cosine similarity.
+6. Gemini receives the resume, target role, and retrieved roadmap context before generating the final JSON report.
+
+Benefits of this approach:
+
+- More focused prompts because only the most relevant roadmap chunks are sent to Gemini.
+- Better scalability if more roles, roadmaps, or learning resources are added later.
+- Cleaner separation between knowledge storage and answer generation.
+- Easier experimentation with custom knowledge bases, such as company-specific role requirements or course catalogs.
+- A more realistic AI mini-project architecture because it demonstrates embeddings, vector search, retrieval, and generation together.
 
 ## Web Development Knowledge Used
 
@@ -113,6 +138,7 @@ If both pasted text and a PDF are provided, the uploaded PDF is analyzed.
 |   +-- index.html
 +-- static/
 |   +-- styles.css
++-- resume_vectors.sqlite3   generated locally after first RAG run
 +-- .env.example
 +-- README.md
 ```
@@ -121,4 +147,7 @@ If both pasted text and a PDF are provided, the uploaded PDF is analyzed.
 
 - PDF upload works best with text-based PDFs. Scanned image-only PDFs may not contain extractable text.
 - The default Gemini model can be changed with `GEMINI_MODEL` in `.env`.
+- The default embedding model is `models/gemini-embedding-001` and can be changed with `GEMINI_EMBEDDING_MODEL` in `.env`.
+- The vector database path can be changed with `VECTOR_DB_PATH` in `.env`.
+- The number of retrieved roadmap chunks can be changed with `RAG_TOP_K` in `.env`.
 - The app is designed for local mini-project/demo use, not production deployment as-is.
